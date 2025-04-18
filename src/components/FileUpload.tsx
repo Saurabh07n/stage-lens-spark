@@ -56,24 +56,30 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
     }
   };
 
-  const handleYoutubeSubmit = () => {
-    if (youtubeLink.includes('youtube.com') || youtubeLink.includes('youtu.be')) {
-      onUpload(youtubeLink);
-    } else {
-      alert('Please enter a valid YouTube link');
+  const handleYoutubeLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setYoutubeLink(e.target.value);
+    if (e.target.value.includes('youtube.com') || e.target.value.includes('youtu.be')) {
+      onUpload(e.target.value);
     }
   };
 
   return (
     <div className="w-full max-w-xl mx-auto space-y-8">
       <div 
-        className={`drag-drop-area ${isDragging ? 'active' : ''} flex flex-col items-center justify-center cursor-pointer`}
+        className={`group cursor-pointer transition-all duration-300 ${
+          isDragging 
+            ? 'border-stage-purple bg-stage-purple-light/50' 
+            : 'border-dashed border-2 border-gray-300 hover:border-stage-purple hover:bg-stage-purple-light/30'
+        } rounded-xl p-8 flex flex-col items-center justify-center`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
       >
+        <Upload className="h-12 w-12 text-stage-purple mb-4 group-hover:scale-110 transition-transform" />
+        <h3 className="text-lg font-medium mb-2">Drop your stage moment here</h3>
+        <p className="text-gray-500 text-sm text-center">or click to browse (MP4, MOV)</p>
         <input 
           type="file" 
           ref={fileInputRef} 
@@ -81,29 +87,20 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
           accept=".mp4,.mov"
           onChange={handleFileSelect}
         />
-        <Upload className="h-12 w-12 text-stage-purple mb-4" />
-        <h3 className="text-lg font-medium mb-2">Drag & drop your video here</h3>
-        <p className="text-gray-500 text-sm text-center">or click to browse (MP4, MOV)</p>
       </div>
 
       <div className="text-center text-gray-500 font-medium">OR</div>
 
-      <div className="space-y-4">
-        <div className="flex items-center space-x-2 p-3 bg-stage-purple-light/30 rounded-lg">
+      <div className="flex flex-col space-y-4">
+        <div className="flex items-center space-x-2 p-4 bg-stage-purple-light/30 rounded-lg transition-all duration-300 hover:bg-stage-purple-light/50 focus-within:ring-2 focus-within:ring-stage-purple">
           <Youtube className="h-5 w-5 text-stage-purple" />
           <input
             type="text"
             placeholder="Paste YouTube video link here"
             className="flex-1 bg-transparent outline-none border-none text-gray-700"
             value={youtubeLink}
-            onChange={(e) => setYoutubeLink(e.target.value)}
+            onChange={handleYoutubeLinkChange}
           />
-          <button 
-            onClick={handleYoutubeSubmit}
-            className="bg-stage-purple text-white px-3 py-1 rounded-md text-sm"
-          >
-            Use
-          </button>
         </div>
       </div>
     </div>
