@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 262 76% 75%; /* Updated to use stage-purple */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -30,9 +32,9 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 262 76% 75%; /* Updated to use stage-purple */
 
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* Slightly increased for more rounded corners */
 
     --sidebar-background: 0 0% 98%;
 
@@ -61,7 +63,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --primary: 262 76% 75%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -96,6 +98,28 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-poppins;
+  }
+}
+
+@layer components {
+  .drag-drop-area {
+    @apply border-2 border-dashed rounded-xl p-8 transition-all duration-300 bg-stage-purple-light/30;
+  }
+  
+  .drag-drop-area.active {
+    @apply border-stage-purple bg-stage-purple-light/50;
+  }
+  
+  .btn-primary {
+    @apply bg-stage-purple hover:bg-stage-purple-dark text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
+  }
+  
+  .form-slide {
+    @apply fixed top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-lg transform transition-transform duration-500 ease-in-out z-50 overflow-y-auto;
+  }
+  
+  .feedback-card {
+    @apply bg-white p-6 rounded-xl shadow-md border border-gray-100 mb-4 transition-all duration-300 hover:shadow-lg;
   }
 }
