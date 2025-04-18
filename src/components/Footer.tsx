@@ -13,12 +13,7 @@ const Footer = () => {
     <footer className="mt-16 py-8 bg-gray-50">
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center space-y-4">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-stage-purple rounded-full mr-3 flex items-center justify-center">
-              <span className="text-white font-bold">S</span>
-            </div>
-            <p className="text-gray-600 font-sora">Powered by <span className="font-semibold">SmallGroup</span></p>
-          </div>
+          <p className="text-gray-600 font-sora">Powered by <span className="font-semibold text-stage-purple">Stage Lens</span></p>
           
           <div className="flex gap-4">
             {socialLinks.map((link, index) => (
@@ -40,3 +35,4 @@ const Footer = () => {
 };
 
 export default Footer;
+

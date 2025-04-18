@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Upload, Youtube } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface FileUploadProps {
   onUpload: (file: File | string) => void;
@@ -9,6 +10,7 @@ interface FileUploadProps {
 const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [youtubeLink, setYoutubeLink] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -37,7 +39,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
     if (files && files.length > 0) {
       const file = files[0];
       if (file.type === 'video/mp4' || file.type === 'video/quicktime') {
-        onUpload(file);
+        setSelectedFile(file);
       } else {
         alert('Please upload an MP4 or MOV file');
       }
@@ -49,7 +51,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
     if (files && files.length > 0) {
       const file = files[0];
       if (file.type === 'video/mp4' || file.type === 'video/quicktime') {
-        onUpload(file);
+        setSelectedFile(file);
       } else {
         alert('Please upload an MP4 or MOV file');
       }
@@ -58,8 +60,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
 
   const handleYoutubeLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setYoutubeLink(e.target.value);
-    if (e.target.value.includes('youtube.com') || e.target.value.includes('youtu.be')) {
-      onUpload(e.target.value);
+  };
+
+  const handleAnalyze = () => {
+    if (selectedFile) {
+      onUpload(selectedFile);
+    } else if (youtubeLink && (youtubeLink.includes('youtube.com') || youtubeLink.includes('youtu.be'))) {
+      onUpload(youtubeLink);
+    } else {
+      alert('Please upload a video file or paste a valid YouTube link');
     }
   };
 
@@ -102,9 +111,18 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
             onChange={handleYoutubeLinkChange}
           />
         </div>
+
+        <Button 
+          onClick={handleAnalyze}
+          disabled={!selectedFile && !youtubeLink}
+          className="w-full"
+        >
+          Analyze Your Video
+        </Button>
       </div>
     </div>
   );
 };
 
 export default FileUpload;
+

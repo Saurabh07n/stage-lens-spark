@@ -18,14 +18,7 @@ const Navigation = () => {
             <span className="text-stage-purple">Stage</span> Lens
           </Link>
           
-          <div className="flex items-center gap-6">
-            {/* SmallGroup Logo */}
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-stage-purple rounded-full flex items-center justify-center">
-                <span className="text-white font-bold">S</span>
-              </div>
-            </div>
-            
+          <div className="flex items-center gap-4">
             {/* Social Icons */}
             <div className="flex gap-4">
               {socialLinks.map((link, index) => (
@@ -48,3 +41,4 @@ const Navigation = () => {
 };
 
 export default Navigation;
+
