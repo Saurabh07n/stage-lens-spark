@@ -2,6 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Youtube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from "@/components/ui/use-toast";
 
 interface FileUploadProps {
   onUpload: (file: File | string) => void;
@@ -12,6 +13,31 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
   const [youtubeLink, setYoutubeLink] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const checkVideoDuration = (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        const duration = video.duration;
+        if (duration > 1200) { // 20 minutes = 1200 seconds
+          toast({
+            title: "Whoa! That's a long performance! 🎭",
+            description: "Please upload a video under 20 minutes for the best analysis experience. We want to focus on your key moments!",
+            variant: "destructive",
+          });
+          resolve(false);
+        } else {
+          resolve(true);
+        }
+      };
+
+      video.src = URL.createObjectURL(file);
+    });
+  };
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -30,7 +56,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
     e.stopPropagation();
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
@@ -39,19 +65,25 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
     if (files && files.length > 0) {
       const file = files[0];
       if (file.type === 'video/mp4' || file.type === 'video/quicktime') {
-        setSelectedFile(file);
+        const isValidDuration = await checkVideoDuration(file);
+        if (isValidDuration) {
+          setSelectedFile(file);
+        }
       } else {
         alert('Please upload an MP4 or MOV file');
       }
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const file = files[0];
       if (file.type === 'video/mp4' || file.type === 'video/quicktime') {
-        setSelectedFile(file);
+        const isValidDuration = await checkVideoDuration(file);
+        if (isValidDuration) {
+          setSelectedFile(file);
+        }
       } else {
         alert('Please upload an MP4 or MOV file');
       }
