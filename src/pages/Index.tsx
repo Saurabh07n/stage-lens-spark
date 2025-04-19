@@ -2,41 +2,21 @@
 import React, { useState } from 'react';
 import Navigation from '../components/Navigation';
 import FileUpload from '../components/FileUpload';
-import UserForm from '../components/UserForm';
-import LoadingScreen from '../components/LoadingScreen';
 import Footer from '../components/Footer';
-import Backdrop from '../components/Backdrop';
-import Hero from '../components/Hero';
-import { UserFormData } from '../components/UserForm';
 import { useNavigate } from 'react-router-dom';
 
-type AppState = 'upload' | 'form' | 'loading' | 'feedback';
-
 const Index = () => {
-  const [appState, setAppState] = useState<AppState>('upload');
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleUpload = (file: File | string) => {
-    setSelectedFile(file);
-    setIsFormOpen(true);
-    setAppState('form');
-  };
+  // Store feedback temporarily
+  const [feedback, setFeedback] = useState<any>(null);
 
-  const handleFormClose = () => {
-    setIsFormOpen(false);
-    setAppState('upload');
-  };
-
-  const handleFormSubmit = (userData: UserFormData) => {
-    setIsFormOpen(false);
-    setAppState('loading');
-    
-    // Simulate loading time
-    setTimeout(() => {
-      navigate('/feedback');
-    }, 3000);
+  const handleFeedback = (data: any) => {
+    setFeedback(data);
+    // Save to session storage so FeedbackPage can access
+    window.sessionStorage.setItem('feedback', JSON.stringify(data));
+    navigate('/feedback');
   };
 
   return (
@@ -44,25 +24,16 @@ const Index = () => {
       <Navigation />
 
       <main className="flex-1">
-        {appState === 'upload' && (
-          <>
-            <Hero />
-            <div className="container mx-auto px-4 py-12">
-              <div className="max-w-2xl mx-auto">
-                <FileUpload onUpload={handleUpload} />
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-2xl mx-auto">
+            <FileUpload onFeedback={handleFeedback} onFetching={setIsLoading} />
+            {isLoading && (
+              <div className="mt-4 text-stage-purple text-lg font-medium text-center animate-pulse">
+                Analyzing video, please wait...
               </div>
-            </div>
-          </>
-        )}
-
-        {appState === 'loading' && <LoadingScreen />}
-
-        <Backdrop isVisible={isFormOpen} onClick={handleFormClose} />
-        <UserForm 
-          isOpen={isFormOpen} 
-          onClose={handleFormClose} 
-          onSubmit={handleFormSubmit} 
-        />
+            )}
+          </div>
+        </div>
       </main>
 
       <Footer />
