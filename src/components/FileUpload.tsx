@@ -1,25 +1,16 @@
+
 import React, { useState, useRef } from 'react';
 import { Upload, Youtube, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/components/ui/use-toast";
-
-const YT_API_KEY = "AIzaSyBUdogLDYjPZUNTYEBiXl0ni_iIPKkuMfE";
+import { GEMINI_API_KEY, YT_API_KEY } from '../config/apiKeys';
 
 interface FileUploadProps {
-  onUpload: (file: File | string, feedback?: any) => void; // changed
+  onUpload: (file: File | string, feedback?: any) => void;
 }
 
 const GEMINI_FEEDBACK_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
-// For storing your Gemini API Key securely:
-// 1. Add your key to Supabase Edge Function Secrets as GEMINI_API_KEY for production.
-// 2. For local test/dev you can pass the key in via project settings (not in codebase).
-// 3. NEVER commit your private API key to the code.
-// See Lovable settings or Supabase docs for Edge Function Secrets.
-
-const GEMINI_API_KEY = (window as any).GEMINI_API_KEY || ""; // injected at runtime by env or Supabase integration
-
-// Helper to build the Gemini prompt for structured, easy to parse feedback
 function buildGeminiPrompt(ytUrl: string) {
   return {
     contents: [
@@ -27,17 +18,17 @@ function buildGeminiPrompt(ytUrl: string) {
         parts: [
           {
             text:
-`I want you to act as a professional public speaking/video analysis coach. Analyze the following YouTube video and return my feedback as a valid JSON (no extra text, just JSON). Structure the JSON as follows:
+`Act as a top-tier public speaking and video presentation coach. Analyze the following YouTube video and respond ONLY with a valid JSON, no extra commentary, strictly matching this format:
 {
-  "overallImpressions": "Overall summary and tone, max 2 sentences.",
-  "strengths": ["List strengths as concise bullet points."],
-  "areasOfImprovement": ["List areas to improve as bullet points."],
-  "practiceTips": ["Give personalized practice/actionable tips, bullet points."]
+  "overallImpressions": "Concise summary of the speaker's style, tone, confidence (1-2 sentences).",
+  "strengths": ["Bullet points on strong aspects (clarity, energy, body language, etc.)"],
+  "areasOfImprovement": ["Bullet points for what can be improved (filler words, vocal variety, engagement, etc.)"],
+  "practiceTips": ["Specific actionable tips (practice routines, exercises, presentation habits, confidence building, engagement techniques, etc.)"]
 }
-After reviewing, return ONLY the JSON, do not add any explanation.
+The feedback should help the user present better, gain more engagement, and become a more effective speaker.
 
-YouTube Video: ${ytUrl}`}
-,
+YouTube Video: ${ytUrl}`
+          },
           {
             file_data: {
               file_uri: ytUrl
@@ -50,8 +41,6 @@ YouTube Video: ${ytUrl}`}
 }
 
 function parseIsoDuration(duration: string): number {
-  // Returns duration in seconds
-  // Format: PT18M27S
   let match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) return 0;
   const hours = parseInt(match[1] || "0", 10);
@@ -61,13 +50,11 @@ function parseIsoDuration(duration: string): number {
 }
 
 function extractYouTubeVideoID(url: string): string | null {
-  // Accepts various YT url formats
   const regexp = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|vi|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
   const match = url.match(regexp);
   return match ? match[1] : null;
 }
 
-// Simple Modal
 function WarningModal({ open, onClose, message }: { open: boolean; onClose: () => void; message: string }) {
   if (!open) return null;
   return (
@@ -96,7 +83,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
     return new Promise((resolve) => {
       const video = document.createElement('video');
       video.preload = 'metadata';
-
       video.onloadedmetadata = () => {
         window.URL.revokeObjectURL(video.src);
         const duration = video.duration;
@@ -108,17 +94,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
           resolve(true);
         }
       };
-
       video.src = URL.createObjectURL(file);
     });
   };
 
-  // Fetch YT API 
   const checkYoutubeDuration = async (url: string) => {
     const vid = extractYouTubeVideoID(url);
     setYtValid(false);
     setYtDuration(null);
-
     if (!vid) return false;
     try {
       const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${vid}&key=${YT_API_KEY}`);
@@ -172,7 +155,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
         const isValidDuration = await checkVideoDuration(file);
         if (isValidDuration) {
           setSelectedFile(file);
-          setYoutubeLink(''); // remove youtube link if any
+          setYoutubeLink('');
         }
       } else {
         setWarningMsg('Please upload an MP4 or MOV file only.');
@@ -196,7 +179,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
         setShowWarning(true);
       }
     }
-    // Always clear file input so user can re-select same file if needed
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -211,7 +193,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
     }
   };
 
-  // Remove video/file
   const removeUpload = () => {
     setSelectedFile(null);
     setYoutubeLink('');
@@ -220,29 +201,20 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Remove just YT input
   const removeYtLink = () => {
     setYoutubeLink('');
     setYtValid(false);
     setYtDuration(null);
   };
 
-  // Remove modal
   const closeWarning = () => setShowWarning(false);
 
   const handleAnalyze = async () => {
-    // Check YouTube
     if (youtubeLink) {
       const check = await checkYoutubeDuration(youtubeLink);
       if (!check) return;
       if (ytValid) {
-        if (!GEMINI_API_KEY) {
-          setWarningMsg("Gemini API key is not set. Please configure your API key securely in Supabase Edge Function Secrets.");
-          setShowWarning(true);
-          return;
-        }
         try {
-          // Show loading in parent while fetching
           onUpload(youtubeLink, "loading");
           const res = await fetch(`${GEMINI_FEEDBACK_URL}?key=${GEMINI_API_KEY}`, {
             method: "POST",
@@ -258,11 +230,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
             data.candidates &&
             data.candidates[0]?.content?.parts?.[0]?.text
           ) {
-            // Try to parse the AI's JSON
             try {
               feedback = JSON.parse(data.candidates[0].content.parts[0].text);
             } catch (err) {
-              // Fallback if not valid JSON
               feedback = { error: "Gemini response could not be parsed." };
             }
           }
