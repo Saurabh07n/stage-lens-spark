@@ -26,7 +26,7 @@ const FeedbackPage = () => {
     <div className="min-h-screen flex flex-col">
       <Navigation />
       <div className="container mx-auto px-4 py-8 flex-1 flex flex-col items-center">
-        <div className="max-w-xl w-full bg-white shadow rounded-xl p-8 mt-6">
+        <div className="w-screen bg-white shadow rounded-xl p-8 mt-6">
           <h2 className="text-2xl font-bold mb-4 text-stage-purple">AI Video Feedback</h2>
           {feedback?.error ? (
             <div className="text-red-600 font-semibold">{feedback.error}</div>
