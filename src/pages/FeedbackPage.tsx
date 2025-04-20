@@ -32,7 +32,7 @@ const FeedbackPage = () => {
       <Navigation />
       <div className="container mx-auto px-4 py-8 flex-1 flex flex-col items-center">
         <div className="w-screen bg-white shadow rounded-xl p-8 mt-6">
-          <h2 className="text-2xl font-bold mb-4 text-stage-purple">AI Video Feedback</h2>
+          <h2 className="text-2xl font-bold mb-4 text-stage-purple text-center">AI Video Feedback</h2>
           {feedback?.error ? (
             <div className="text-red-600 font-semibold bg-white rounded-lg shadow-lg px-8 py-6 w-full text-center">{feedback.error}</div>
           ) : feedback ? (
