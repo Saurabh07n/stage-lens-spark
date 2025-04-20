@@ -1,9 +1,9 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Youtube, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from "@/components/ui/use-toast";
 import { GEMINI_API_KEY, YT_API_KEY } from '../config/apiKeys';
+import { saveFeedbackToStorage } from '../utils/feedbackStore';
+import { useNavigate } from 'react-router-dom';
 
 interface FileUploadProps {
   onUpload: (file: File | string, feedback?: any) => void;
@@ -79,6 +79,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
   const [showWarning, setShowWarning] = useState(false);
   const [warningMsg, setWarningMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const analyzeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const navigate = useNavigate();
 
   const checkVideoDuration = (file: File): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -212,7 +214,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
 
   const parseGeminiResponse = (responseText: string): any => {
     try {
-      // Clean the response text
       const cleanText = responseText
         .trim()
         .replace(/^```(?:json)?/, '')
@@ -221,7 +222,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
   
       const parsed = JSON.parse(cleanText);
   
-      // Validate required fields
       const requiredFields = ['overallImpressions', 'strengths', 'areasOfImprovement', 'practiceTips'];
       const isValid = requiredFields.every(field => parsed[field]);
   
@@ -240,6 +240,17 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && (selectedFile || youtubeLink) && analyzeBtnRef.current && !analyzeBtnRef.current.disabled) {
+        analyzeBtnRef.current.click();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line
+  }, [selectedFile, youtubeLink]);
+
   const handleAnalyze = async () => {
     if (youtubeLink) {
       const check = await checkYoutubeDuration(youtubeLink);
@@ -247,7 +258,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
       if (ytValid) {
         try {
           onUpload(youtubeLink, "loading");
-          const res = await fetch(`${GEMINI_FEEDBACK_URL}?key=${GEMINI_API_KEY}`, {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
@@ -263,22 +274,18 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
           ) {
             try {
               if (!data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                console.error('[Gemini API] Invalid response structure:', data);
-                feedback = { 
-                  error: "We couldn't analyze your video right now. Please try again in a moment." 
-                };
+                feedback = { error: "We couldn't analyze your video right now. Please try again in a moment." };
               } else {
                 feedback = parseGeminiResponse(data.candidates[0].content.parts[0].text);
               }
-            } catch (err) {
-              console.error('[Gemini Parser] Failed to parse response:', err);
+            } catch {
               feedback = { error: "We couldn't analyze your video right now. Please try again in a moment." };
             }
           }
-          onUpload(youtubeLink, feedback);
+          saveFeedbackToStorage(feedback);
+          navigate('/feedback');
           return;
         } catch (e) {
-          console.error('[YouTube Analysis] Network or API error:', e);
           setWarningMsg("Unable to analyze your video. Please check your connection and try again.");
           setShowWarning(true);
           return;
@@ -288,6 +295,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
     if (selectedFile) {
       const isValid = await checkVideoDuration(selectedFile);
       if (!isValid) return;
+      // Placeholder logic for file upload feedback
+      // saveFeedbackToStorage({ error: "Upload feedback not implemented." });
       onUpload(selectedFile);
       return;
     }
@@ -375,6 +384,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
           )}
         </div>
         <Button 
+          ref={analyzeBtnRef}
           onClick={handleAnalyze}
           disabled={(!selectedFile && !youtubeLink)}
           className="w-full"

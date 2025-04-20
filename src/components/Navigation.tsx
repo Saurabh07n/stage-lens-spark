@@ -1,9 +1,10 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Youtube, Instagram, Globe } from 'lucide-react';
 
 const Navigation = () => {
+  const navigate = useNavigate();
   const socialLinks = [
     { icon: Globe, href: 'https://smallgrp.com' },
     { icon: Youtube, href: 'https://smallgrp.com' },
@@ -14,12 +15,16 @@ const Navigation = () => {
     <header className="py-6 border-b border-gray-100">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
-          <Link to="/" className="font-sora text-2xl font-bold text-gray-800">
+          <button
+            onClick={() => navigate('/')}
+            className="font-sora text-2xl font-bold text-gray-800 bg-transparent border-none cursor-pointer outline-none p-0 m-0"
+            aria-label="Go to Stage Lens Home"
+            tabIndex={0}
+            style={{ background: 'none' }}
+          >
             <span className="text-stage-purple">Stage</span> Lens
-          </Link>
-          
+          </button>
           <div className="flex items-center gap-4">
-            {/* Social Icons */}
             <div className="flex gap-4">
               {socialLinks.map((link, index) => (
                 <a
@@ -41,4 +46,3 @@ const Navigation = () => {
 };
 
 export default Navigation;
-
