@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Upload, Youtube, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GEMINI_API_KEY, YT_API_KEY } from '../config/apiKeys';
 import { saveFeedbackToStorage } from '../utils/feedbackStore';
 import { useNavigate } from 'react-router-dom';
+import UserForm, { UserFormData } from './UserForm';
 
 interface FileUploadProps {
   onUpload: (file: File | string, feedback?: any) => void;
@@ -81,6 +82,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const analyzeBtnRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [pendingAnalyze, setPendingAnalyze] = useState<"yt" | "file" | null>(null);
+  const [pendingData, setPendingData] = useState<{file?: File, link?: string} | null>(null);
 
   const checkVideoDuration = (file: File): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -243,64 +247,74 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (
       e.key === "Enter" &&
-      analyzeBtnRef.current &&
-      !analyzeBtnRef.current.disabled
+      (!analyzeBtnRef.current?.disabled)
     ) {
-      analyzeBtnRef.current.click();
+      analyzeBtnRef.current?.click();
     }
   };
 
+  const handleYoutubeAnalysisFlow = async () => {
+    const check = await checkYoutubeDuration(youtubeLink);
+    if (!check) return;
+    if (ytValid) {
+      setPendingAnalyze("yt");
+      setShowUserForm(true);
+    }
+  };
+
+  const handleFileAnalysisFlow = async () => {
+    const isValid = await checkVideoDuration(selectedFile!);
+    if (!isValid) return;
+    setPendingAnalyze("file");
+    setShowUserForm(true);
+  };
+
   const handleAnalyze = async () => {
-    if (youtubeLink) {
-      const check = await checkYoutubeDuration(youtubeLink);
-      if (!check) return;
-      if (ytValid) {
-        try {
-          onUpload(youtubeLink, "loading");
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(buildGeminiPrompt(youtubeLink))
-          });
-          const data = await res.json();
-          let feedback = null;
-          if (
-            data &&
-            data.candidates &&
-            data.candidates[0]?.content?.parts?.[0]?.text
-          ) {
-            try {
-              if (!data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                feedback = { error: "We couldn't analyze your video right now. Please try again in a moment." };
-              } else {
-                feedback = parseGeminiResponse(data.candidates[0].content.parts[0].text);
-              }
-            } catch {
-              feedback = { error: "We couldn't analyze your video right now. Please try again in a moment." };
-            }
-          }
-          saveFeedbackToStorage(feedback);
-          navigate('/feedback');
-          return;
-        } catch (e) {
-          setWarningMsg("Unable to analyze your video. Please check your connection and try again.");
-          setShowWarning(true);
-          return;
-        }
-      }
-    }
-    if (selectedFile) {
-      const isValid = await checkVideoDuration(selectedFile);
-      if (!isValid) return;
-      // Placeholder logic for file upload feedback
-      // saveFeedbackToStorage({ error: "Upload feedback not implemented." });
-      onUpload(selectedFile);
-      return;
-    }
+    if (youtubeLink) { await handleYoutubeAnalysisFlow(); return; }
+    if (selectedFile) { await handleFileAnalysisFlow(); return; }
     setWarningMsg('Please upload a video file or paste a valid YouTube link!');
     setShowWarning(true);
+  };
+
+  const handleUserFormSubmit = async (userData: UserFormData) => {
+    setShowUserForm(false);
+    if (pendingAnalyze === "yt") {
+      try {
+        onUpload(youtubeLink, "loading");
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(buildGeminiPrompt(youtubeLink))
+          }
+        );
+        const data = await res.json();
+        let feedback = null;
+        if (data &&
+            data.candidates &&
+            data.candidates[0]?.content?.parts?.[0]?.text) {
+              feedback = parseGeminiResponse(data.candidates[0].content.parts[0].text);
+        } else {
+          feedback = { error: "We couldn't analyze your video right now. Please try again in a moment." };
+        }
+        saveFeedbackToStorage(feedback);
+        navigate('/feedback');
+      } catch (e) {
+        setWarningMsg("Unable to analyze your video. Please check your connection and try again.");
+        setShowWarning(true);
+      }
+    } else if (pendingAnalyze === "file") {
+      onUpload(selectedFile!);
+    }
+    setPendingAnalyze(null);
+    setPendingData(null);
+  };
+
+  const handleUserFormClose = () => {
+    setShowUserForm(false);
+    setPendingAnalyze(null);
+    setPendingData(null);
   };
 
   const getFileName = (file: File) => file.name.length > 20 ? `${file.name.slice(0, 17)}...` : file.name;
@@ -383,15 +397,18 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
             </button>
           )}
         </div>
-        <Button 
+        <button
           ref={analyzeBtnRef}
           onClick={handleAnalyze}
           disabled={(!selectedFile && !youtubeLink)}
-          className="w-full"
-        >
-          Analyze Your Video
-        </Button>
+          className="w-full px-6 py-3 bg-stage-purple text-white font-bold rounded-lg hover:bg-stage-purple-dark transition"
+        >Analyze Your Video</button>
       </div>
+      <UserForm 
+        isOpen={showUserForm} 
+        onClose={handleUserFormClose} 
+        onSubmit={handleUserFormSubmit} 
+      />
     </div>
   );
 };
