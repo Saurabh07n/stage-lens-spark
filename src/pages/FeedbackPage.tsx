@@ -7,8 +7,8 @@ import { ArrowLeft } from 'lucide-react';
 import { getFeedbackFromStorage, clearFeedbackStorage } from '../utils/feedbackStore';
 
 const SectionCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="bg-white rounded-xl shadow-sm mb-6 px-6 py-5">
-    <div className="font-semibold text-xm md:text-lg mb-2 text-stage-purple">{title}</div>
+  <div className="bg-white rounded-xl shadow-lg mx-auto mb-6 px-8 py-6" style={{maxWidth:'820px', width:'80%'}}>
+    <div className="font-semibold text-lg mb-3 text-stage-purple">{title}</div>
     <div className="text-gray-700">{children}</div>
   </div>
 );
@@ -28,34 +28,34 @@ const FeedbackPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#FAFAFB]">
       <Navigation />
-      <div className="container mx-auto px-4 py-12 flex-1 flex flex-col items-center bg-[#FAFAFB]">
-        <div className="max-w-2xl w-full bg-white shadow rounded-2xl p-8 mt-8">
-          <h2 className="text-2xl md:text-3xl font-bold mb-8 text-stage-purple">AI Video Feedback</h2>
+      <div className="container mx-auto px-4 py-12 flex-1 flex flex-col items-center justify-center">
+        <div className="max-w-2xl w-full flex flex-col items-center mt-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-10 text-stage-purple text-center">AI Video Feedback</h2>
           {feedback?.error ? (
-            <div className="text-red-600 font-semibold">{feedback.error}</div>
+            <div className="text-red-600 font-semibold bg-white rounded-lg shadow-lg px-8 py-6 w-full text-center">{feedback.error}</div>
           ) : feedback ? (
-            <div className="space-y-6">
+            <div className="w-full flex flex-col items-center">
               <SectionCard title="Overall Impressions">
                 <p>{feedback.overallImpressions}</p>
               </SectionCard>
               <SectionCard title="Strengths">
-                <ul className="list-disc pl-5">
+                <ul className="list-disc pl-6 space-y-2">
                   {feedback.strengths?.map?.((item: string, i: number) =>
                     <li key={i}>{item}</li>
                   )}
                 </ul>
               </SectionCard>
               <SectionCard title="Areas of Improvement">
-                <ul className="list-disc pl-5">
+                <ul className="list-disc pl-6 space-y-2">
                   {feedback.areasOfImprovement?.map?.((item: string, i: number) =>
                     <li key={i}>{item}</li>
                   )}
                 </ul>
               </SectionCard>
               <SectionCard title="Practice Tips">
-                <ul className="list-disc pl-5">
+                <ul className="list-disc pl-6 space-y-2">
                   {feedback.practiceTips?.map?.((item: string, i: number) =>
                     <li key={i}>{item}</li>
                   )}
@@ -63,7 +63,7 @@ const FeedbackPage = () => {
               </SectionCard>
             </div>
           ) : (
-            <div className="text-gray-700">No feedback available. Please upload or analyze a video.</div>
+            <div className="text-gray-700 bg-white rounded-xl shadow-lg p-6 text-center w-full">No feedback available. Please upload or analyze a video.</div>
           )}
         </div>
         <div className="flex gap-4 mt-10">
