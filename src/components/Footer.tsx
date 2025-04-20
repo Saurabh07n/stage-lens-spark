@@ -8,7 +8,7 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center space-y-4">
           <span className="text-gray-600 font-sora">
-            <span className="font-semibold text-stage-purple">Stage&nbsp;Lens</span> powered by{' '}
+            <span className="font-bold text-stage-purple">Stage </span><span className="font-bold">Lens</span> powered by{' '}
             <a
               href="https://smallgrp.com"
               target="_blank"
