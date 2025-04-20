@@ -210,6 +210,36 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
 
   const closeWarning = () => setShowWarning(false);
 
+  const parseGeminiResponse = (responseText: string): any => {
+    try {
+      // Clean the response text
+      const cleanText = responseText
+        .trim()
+        .replace(/^```(?:json)?/, '')
+        .replace(/```$/, '')
+        .trim();
+  
+      const parsed = JSON.parse(cleanText);
+  
+      // Validate required fields
+      const requiredFields = ['overallImpressions', 'strengths', 'areasOfImprovement', 'practiceTips'];
+      const isValid = requiredFields.every(field => parsed[field]);
+  
+      if (!isValid) {
+        return {
+          error: "Incomplete feedback structure received"
+        };
+      }
+  
+      return parsed;
+    } catch (err) {
+      console.error('Feedback parsing error:', err);
+      return {
+        error: "Unable to process the video feedback. Please try again."
+      };
+    }
+  };
+
   const handleAnalyze = async () => {
     if (youtubeLink) {
       const check = await checkYoutubeDuration(youtubeLink);
@@ -232,15 +262,24 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
             data.candidates[0]?.content?.parts?.[0]?.text
           ) {
             try {
-              feedback = JSON.parse(data.candidates[0].content.parts[0].text);
+              if (!data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                console.error('[Gemini API] Invalid response structure:', data);
+                feedback = { 
+                  error: "We couldn't analyze your video right now. Please try again in a moment." 
+                };
+              } else {
+                feedback = parseGeminiResponse(data.candidates[0].content.parts[0].text);
+              }
             } catch (err) {
-              feedback = { error: "Yikes — the feedback couldn’t load. Please try with a different video or check back shortly." };
+              console.error('[Gemini Parser] Failed to parse response:', err);
+              feedback = { error: "We couldn't analyze your video right now. Please try again in a moment." };
             }
           }
           onUpload(youtubeLink, feedback);
           return;
         } catch (e) {
-          setWarningMsg("Failed to analyze your YouTube video. Please try again later.");
+          console.error('[YouTube Analysis] Network or API error:', e);
+          setWarningMsg("Unable to analyze your video. Please check your connection and try again.");
           setShowWarning(true);
           return;
         }
