@@ -240,16 +240,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
     }
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && (selectedFile || youtubeLink) && analyzeBtnRef.current && !analyzeBtnRef.current.disabled) {
-        analyzeBtnRef.current.click();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line
-  }, [selectedFile, youtubeLink]);
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      e.key === "Enter" &&
+      analyzeBtnRef.current &&
+      !analyzeBtnRef.current.disabled
+    ) {
+      analyzeBtnRef.current.click();
+    }
+  };
 
   const handleAnalyze = async () => {
     if (youtubeLink) {
@@ -370,6 +369,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
             className="flex-1 bg-transparent outline-none border-none text-gray-700"
             value={youtubeLink}
             onChange={handleYoutubeLinkChange}
+            onKeyDown={handleInputKeyDown}
             disabled={!!selectedFile}
             spellCheck={false}
             autoCorrect="off"
