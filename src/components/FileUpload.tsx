@@ -27,8 +27,9 @@ function buildGeminiPrompt(ytUrl: string) {
 }
 The feedback should help the user present better, gain more engagement, and become a more effective speaker.
 
-YouTube Video: ${ytUrl}`
-          },
+Make sure the JSON is well-structured and can be parsed directly.
+`}
+,
           {
             file_data: {
               file_uri: ytUrl
@@ -87,7 +88,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
         window.URL.revokeObjectURL(video.src);
         const duration = video.duration;
         if (duration > 900) {
-          setWarningMsg("Please upload a video under 15 minutes so we can focus on your performance's best moments. Shorter videos = sharper analysis!");
+          setWarningMsg("That video’s a bit too epic.\nFor Stage Lens to work its magic, try something under 15 minutes!");
           setShowWarning(true);
           resolve(false);
         } else {
@@ -111,7 +112,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
       const seconds = parseIsoDuration(contentDetails.duration);
       setYtDuration(seconds);
       if (seconds > 900) {
-        setWarningMsg("The YouTube video is over 15 minutes. Please paste a link to a shorter video for best results!");
+        setWarningMsg("That video’s a bit too epic.\nFor Stage Lens to work its magic, try something under 15 minutes!");
         setShowWarning(true);
         setYtValid(false);
         return false;
@@ -233,13 +234,13 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
             try {
               feedback = JSON.parse(data.candidates[0].content.parts[0].text);
             } catch (err) {
-              feedback = { error: "Gemini response could not be parsed." };
+              feedback = { error: "Yikes — the feedback couldn’t load. Please try with a different video or check back shortly." };
             }
           }
           onUpload(youtubeLink, feedback);
           return;
         } catch (e) {
-          setWarningMsg("Failed to analyze YouTube video. Please try again later.");
+          setWarningMsg("Failed to analyze your YouTube video. Please try again later.");
           setShowWarning(true);
           return;
         }
