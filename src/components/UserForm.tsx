@@ -46,7 +46,6 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
   const [descriptionOtherText, setDescriptionOtherText] = useState("");
   const [purposeOtherText, setPurposeOtherText] = useState("");
 
-  // Update input change to handle other text fields
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === 'descriptionOther') {
@@ -54,7 +53,7 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
       setFormData(prev => ({
         ...prev,
         description: "Other",
-        customTask: prev.customTask // avoid accidentally erasing this
+        customTask: prev.customTask
       }));
     } else if (name === 'purposeOther') {
       setPurposeOtherText(value);
@@ -71,10 +70,8 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
     }
   };
 
-  // Update next step logic to handle the "Other" field correctly
   const handleNextStep = () => {
     if (step === 2 && formData.purpose === "Other") {
-      // Show "other" text field before finishing
       setStep(3);
     } else if (step === 3 && formData.purpose === "Other") {
       if (formData.description === "Other") setStep(4);
@@ -105,7 +102,10 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
     }
   };
 
-  // Update validation to require the "Other" fields to be filled
+  const handlePrevStep = () => {
+    setStep(prev => (prev > 0 ? prev - 1 : 0));
+  };
+
   const isCurrentStepValid = () => {
     switch (step) {
       case 0:
@@ -145,7 +145,6 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
           </button>
         </div>
         <div className="mb-6">
-          {/* Steps shown depend on "Other" selections */}
           <div className="flex justify-between mb-2">
             {(() => {
               let totalSteps = 3;
@@ -252,7 +251,6 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
               )}
             </div>
           )}
-          {/* Handle custom task / description for "Other" on additional steps */}
           {(step === 3 && formData.purpose === "Other") && (
             <div className="space-y-4 animate-fade-in">
               <h3 className="text-xl font-medium text-gray-700">How would you describe yourself?</h3>
