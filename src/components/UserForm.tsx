@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
@@ -70,29 +71,41 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
     }
   };
 
+  // On Next/Start Analysis, only submit if all required fields are filled. If "Other" is selected and described, Finish.
   const handleNextStep = () => {
+    // Step 0: Name, Step 1: Email, Step 2: Purpose, Step 3: Description (may be "Other")
     if (step === 2 && formData.purpose === "Other") {
-      setStep(3);
-    } else if (step === 3 && formData.purpose === "Other") {
-      if (formData.description === "Other") setStep(4);
-      else onSubmit({
-        ...formData,
-        purpose: purposeOtherText || formData.purpose,
-        description: descriptionOtherText || formData.description,
-        customTask: formData.customTask,
-      });
-    } else if (step === 3 && formData.description === "Other") {
-      setStep(4);
-    } else if (step === 4) {
+      setStep(3); // Show description step if not already there
+      return;
+    }
+    // Show custom input for description if "Other"
+    if (step === 3 && formData.description === "Other") {
+      // Do not increment further, just submit if text is filled
+      if (descriptionOtherText.trim().length > 0) {
+        onSubmit({
+          ...formData,
+          purpose: purposeOtherText || formData.purpose,
+          description: descriptionOtherText,
+          customTask: formData.customTask,
+        });
+      }
+      return;
+    }
+    // If step==3 and no "Other"
+    if (step === 3 && formData.description !== "Other") {
       onSubmit({
         ...formData,
         purpose: purposeOtherText || formData.purpose,
         description: descriptionOtherText || formData.description,
         customTask: formData.customTask,
       });
-    } else if (step < 3) {
+      return;
+    }
+    // All other cases (steps 0,1,2 inc) go to next step
+    if (step < 3) {
       setStep(step + 1);
     } else {
+      // Final fallback submit (should not be hit, but for safety)
       onSubmit({
         ...formData,
         purpose: purposeOtherText || formData.purpose,
@@ -106,6 +119,7 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
     setStep(prev => (prev > 0 ? prev - 1 : 0));
   };
 
+  // Validation per step (ensure Other text is provided if shown)
   const isCurrentStepValid = () => {
     switch (step) {
       case 0:
@@ -119,20 +133,22 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
         }
         return formData.purpose.trim().length > 0;
       case 3:
-        if (formData.purpose === "Other") {
-          return formData.description === "Other"
-            ? descriptionOtherText.trim().length > 0
-            : formData.description.trim().length > 0;
-        }
         if (formData.description === "Other") {
           return descriptionOtherText.trim().length > 0;
         }
         return formData.description.trim().length > 0;
-      case 4:
-        return descriptionOtherText.trim().length > 0;
       default:
         return false;
     }
+  };
+
+  // Change button label logic to always show 'Start Analysis' on last step
+  const isFinalStep = () => {
+    // If current step is description and description is not "Other"
+    if (step === 3 && formData.description !== "Other") return true;
+    // If current step is description and description is "Other"
+    if (step === 3 && formData.description === "Other") return true;
+    return false;
   };
 
   return (
@@ -162,7 +178,7 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
             Step {step + 1} of {
               1 +
               1 +
-              1 + // up through description
+              1 +
               (formData.purpose === "Other" ? 1 : 0) +
               (formData.description === "Other" ? 1 : 0)
             }
@@ -224,34 +240,7 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
               )}
             </div>
           )}
-          {(step === 3 && formData.purpose !== "Other") && (
-            <div className="space-y-4 animate-fade-in">
-              <h3 className="text-xl font-medium text-gray-700">How would you describe yourself?</h3>
-              <p className="text-gray-500">Help us tailor our feedback to you</p>
-              <select
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stage-purple focus:border-transparent outline-none bg-white"
-              >
-                <option value="" disabled>Select a description</option>
-                {descriptionOptions.map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-              {formData.description === "Other" && (
-                <input
-                  type="text"
-                  name="descriptionOther"
-                  value={descriptionOtherText}
-                  onChange={handleInputChange}
-                  placeholder="Please describe yourself"
-                  className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stage-purple focus:border-transparent outline-none"
-                />
-              )}
-            </div>
-          )}
-          {(step === 3 && formData.purpose === "Other") && (
+          {step === 3 && (
             <div className="space-y-4 animate-fade-in">
               <h3 className="text-xl font-medium text-gray-700">How would you describe yourself?</h3>
               <p className="text-gray-500">Help us tailor our feedback to you</p>
@@ -295,11 +284,7 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
             disabled={!isCurrentStepValid()}
             className={`btn-primary ${!isCurrentStepValid() ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {step === (
-              (formData.purpose === "Other" && formData.description === "Other") ? 4 : 3
-            )
-              ? 'Start Analysis'
-              : 'Next'}
+            {isFinalStep() ? 'Start Analysis' : 'Next'}
           </button>
         </div>
       </div>
@@ -308,3 +293,4 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
 };
 
 export default UserForm;
+
