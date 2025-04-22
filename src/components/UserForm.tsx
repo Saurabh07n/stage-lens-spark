@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
@@ -44,29 +43,69 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
     'Other'
   ];
 
+  const [descriptionOtherText, setDescriptionOtherText] = useState("");
+  const [purposeOtherText, setPurposeOtherText] = useState("");
+
+  // Update input change to handle other text fields
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'descriptionOther') {
+      setDescriptionOtherText(value);
+      setFormData(prev => ({
+        ...prev,
+        description: "Other",
+        customTask: prev.customTask // avoid accidentally erasing this
+      }));
+    } else if (name === 'purposeOther') {
+      setPurposeOtherText(value);
+      setFormData(prev => ({
+        ...prev,
+        purpose: "Other",
+        customTask: prev.customTask
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
+  // Update next step logic to handle the "Other" field correctly
   const handleNextStep = () => {
-    if (step < (formData.purpose === "Other" && step === 2 ? 4 : 3)) {
+    if (step === 2 && formData.purpose === "Other") {
+      // Show "other" text field before finishing
+      setStep(3);
+    } else if (step === 3 && formData.purpose === "Other") {
+      if (formData.description === "Other") setStep(4);
+      else onSubmit({
+        ...formData,
+        purpose: purposeOtherText || formData.purpose,
+        description: descriptionOtherText || formData.description,
+        customTask: formData.customTask,
+      });
+    } else if (step === 3 && formData.description === "Other") {
+      setStep(4);
+    } else if (step === 4) {
+      onSubmit({
+        ...formData,
+        purpose: purposeOtherText || formData.purpose,
+        description: descriptionOtherText || formData.description,
+        customTask: formData.customTask,
+      });
+    } else if (step < 3) {
       setStep(step + 1);
     } else {
-      onSubmit(formData);
+      onSubmit({
+        ...formData,
+        purpose: purposeOtherText || formData.purpose,
+        description: descriptionOtherText || formData.description,
+        customTask: formData.customTask,
+      });
     }
   };
 
-  const handlePrevStep = () => {
-    if (step > 0) {
-      setStep(step - 1);
-    }
-  };
-
-  // Validate the current step
+  // Update validation to require the "Other" fields to be filled
   const isCurrentStepValid = () => {
     switch (step) {
       case 0:
@@ -75,14 +114,22 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(formData.email);
       case 2:
+        if (formData.purpose === "Other") {
+          return purposeOtherText.trim().length > 0;
+        }
         return formData.purpose.trim().length > 0;
       case 3:
         if (formData.purpose === "Other") {
-          return formData.customTask?.trim().length > 0;
+          return formData.description === "Other"
+            ? descriptionOtherText.trim().length > 0
+            : formData.description.trim().length > 0;
+        }
+        if (formData.description === "Other") {
+          return descriptionOtherText.trim().length > 0;
         }
         return formData.description.trim().length > 0;
       case 4:
-        return formData.customTask?.trim().length > 0; // "Other" extra step
+        return descriptionOtherText.trim().length > 0;
       default:
         return false;
     }
@@ -98,15 +145,29 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
           </button>
         </div>
         <div className="mb-6">
+          {/* Steps shown depend on "Other" selections */}
           <div className="flex justify-between mb-2">
-            {[0, 1, 2, 3, ...(formData.purpose === "Other" ? [4] : [])].map((i) => (
-              <div 
-                key={i} 
-                className={`h-2 flex-1 mx-1 rounded-full ${i <= step ? 'bg-stage-purple' : 'bg-gray-200'}`}
-              />
-            ))}
+            {(() => {
+              let totalSteps = 3;
+              if (formData.purpose === "Other") totalSteps++;
+              if (formData.description === "Other") totalSteps++;
+              return [...Array(totalSteps + 1)].map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`h-2 flex-1 mx-1 rounded-full ${i <= step ? 'bg-stage-purple' : 'bg-gray-200'}`}
+                />
+              ));
+            })()}
           </div>
-          <div className="text-right text-sm text-gray-500">Step {step + 1} of {formData.purpose === "Other" ? "5" : "4"}</div>
+          <div className="text-right text-sm text-gray-500">
+            Step {step + 1} of {
+              1 +
+              1 +
+              1 + // up through description
+              (formData.purpose === "Other" ? 1 : 0) +
+              (formData.description === "Other" ? 1 : 0)
+            }
+          </div>
         </div>
         <div className="min-h-[250px]">
           {step === 0 && (
@@ -152,20 +213,16 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
-            </div>
-          )}
-          {step === 3 && formData.purpose === "Other" && (
-            <div className="space-y-4 animate-fade-in">
-              <h3 className="text-xl font-medium text-gray-700">What task should we do for you?</h3>
-              <p className="text-gray-500">Please describe your custom task.</p>
-              <input
-                type="text"
-                name="customTask"
-                value={formData.customTask || ""}
-                onChange={handleInputChange}
-                placeholder="e.g. Suggest unique ways to boost engagement"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stage-purple focus:border-transparent outline-none"
-              />
+              {formData.purpose === "Other" && (
+                <input
+                  type="text"
+                  name="purposeOther"
+                  value={purposeOtherText}
+                  onChange={handleInputChange}
+                  placeholder="Please describe your purpose"
+                  className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stage-purple focus:border-transparent outline-none"
+                />
+              )}
             </div>
           )}
           {(step === 3 && formData.purpose !== "Other") && (
@@ -183,6 +240,44 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
+              {formData.description === "Other" && (
+                <input
+                  type="text"
+                  name="descriptionOther"
+                  value={descriptionOtherText}
+                  onChange={handleInputChange}
+                  placeholder="Please describe yourself"
+                  className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stage-purple focus:border-transparent outline-none"
+                />
+              )}
+            </div>
+          )}
+          {/* Handle custom task / description for "Other" on additional steps */}
+          {(step === 3 && formData.purpose === "Other") && (
+            <div className="space-y-4 animate-fade-in">
+              <h3 className="text-xl font-medium text-gray-700">How would you describe yourself?</h3>
+              <p className="text-gray-500">Help us tailor our feedback to you</p>
+              <select
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stage-purple focus:border-transparent outline-none bg-white"
+              >
+                <option value="" disabled>Select a description</option>
+                {descriptionOptions.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              {formData.description === "Other" && (
+                <input
+                  type="text"
+                  name="descriptionOther"
+                  value={descriptionOtherText}
+                  onChange={handleInputChange}
+                  placeholder="Please describe yourself"
+                  className="w-full mt-2 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stage-purple focus:border-transparent outline-none"
+                />
+              )}
             </div>
           )}
         </div>
@@ -202,7 +297,11 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
             disabled={!isCurrentStepValid()}
             className={`btn-primary ${!isCurrentStepValid() ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {step === (formData.purpose === "Other" ? 3 : 3) ? 'Start Analysis' : 'Next'}
+            {step === (
+              (formData.purpose === "Other" && formData.description === "Other") ? 4 : 3
+            )
+              ? 'Start Analysis'
+              : 'Next'}
           </button>
         </div>
       </div>

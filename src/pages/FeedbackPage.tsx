@@ -1,82 +1,92 @@
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Navigation from '../components/Navigation';
-import Footer from '../components/Footer';
-import { ArrowLeft } from 'lucide-react';
-import { getFeedbackFromStorage, clearFeedbackStorage } from '../utils/feedbackStore';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
-const SectionCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="bg-white rounded-xl shadow-lg mx-auto mb-6 px-8 py-6" style={{maxWidth:'820px', width:'80%'}}>
-    <div className="font-semibold text-lg mb-3 text-stage-purple">{title}</div>
-    <div className="text-gray-700">{children}</div>
-  </div>
-);
+interface FeedbackData {
+  overallImpressions: string;
+  strengths: string[];
+  areasOfImprovement: string[];
+  practiceTips: string[];
+  error?: string;
+}
 
-const FeedbackPage = () => {
+function getFeedback(): FeedbackData | null {
+  try {
+    const local = localStorage.getItem("stage_feedback");
+    if (!local) return null;
+    return JSON.parse(local);
+  } catch {
+    return null;
+  }
+}
+
+const FeedbackPage: React.FC = () => {
+  const feedback = getFeedback();
   const navigate = useNavigate();
-  const [feedback, setFeedback] = useState<any | null>(null);
 
-  useEffect(() => {
-    const fb = getFeedbackFromStorage();
-    setFeedback(fb);
-  }, []);
+  if (!feedback || feedback.error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[40vh]">
+        <div className="text-lg text-red-500 font-semibold mb-3">
+          {feedback?.error || "No feedback available!"}
+        </div>
+        <button
+          className="px-6 py-2 mt-2 bg-stage-purple text-white rounded-lg shadow hover:bg-stage-purple-dark"
+          onClick={() => navigate("/")}
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
 
-  const handleBack = () => {
-    clearFeedbackStorage();
-    navigate('/');
-  };
+  // Utility to render a tile
+  function SectionTile({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+      <div className="bg-white rounded-2xl shadow-xl mx-auto my-8 p-6 md:p-10 max-w-3xl w-[75vw] flex flex-col space-y-3">
+        <h2 className="text-2xl font-bold text-stage-purple mb-2">{title}</h2>
+        <div className="text-gray-700">{children}</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAFAFB]">
-      <Navigation />
-      <div className="container mx-auto px-4 py-8 flex-1 flex flex-col items-center">
-        <div className="w-screen bg-white shadow rounded-xl p-8 mt-6">
-          <h2 className="text-2xl font-bold mb-4 text-stage-purple text-center">AI Video Feedback</h2>
-          {feedback?.error ? (
-            <div className="text-red-600 font-semibold bg-white rounded-lg shadow-lg px-8 py-6 w-full text-center">{feedback.error}</div>
-          ) : feedback ? (
-            <div className="w-full flex flex-col items-center">
-              <SectionCard title="Overall Impressions">
-                <p>{feedback.overallImpressions}</p>
-              </SectionCard>
-              <SectionCard title="Strengths">
-                <ul className="list-disc pl-6 space-y-2">
-                  {feedback.strengths?.map?.((item: string, i: number) =>
-                    <li key={i}>{item}</li>
-                  )}
-                </ul>
-              </SectionCard>
-              <SectionCard title="Areas of Improvement">
-                <ul className="list-disc pl-6 space-y-2">
-                  {feedback.areasOfImprovement?.map?.((item: string, i: number) =>
-                    <li key={i}>{item}</li>
-                  )}
-                </ul>
-              </SectionCard>
-              <SectionCard title="Practice Tips">
-                <ul className="list-disc pl-6 space-y-2">
-                  {feedback.practiceTips?.map?.((item: string, i: number) =>
-                    <li key={i}>{item}</li>
-                  )}
-                </ul>
-              </SectionCard>
-            </div>
-          ) : (
-            <div className="text-gray-700 bg-white rounded-xl shadow-lg p-6 text-center w-full">No feedback available. Please upload or analyze a video.</div>
-          )}
-        </div>
-        <div className="flex gap-4 mt-10">
-          <button
-            onClick={handleBack}
-            className="flex items-center space-x-2 bg-stage-purple-light/30 hover:bg-stage-purple-light/50 text-stage-purple px-6 py-3 rounded-lg transition-all duration-200 font-semibold"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span>Analyze Another Video</span>
-          </button>
-        </div>
+    <div className="flex flex-col items-center min-h-screen py-10 bg-gray-50">
+      <div className="w-full max-w-3xl flex items-center justify-between mb-6">
+        <button
+          className="flex items-center text-stage-purple hover:underline"
+          onClick={() => navigate("/")}
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />Analyze another video
+        </button>
+        <span className="font-bold text-xl text-gray-900">Your Video Feedback</span>
+        <div />
       </div>
-      <Footer />
+      <SectionTile title="Overall Impressions">
+        {feedback.overallImpressions}
+      </SectionTile>
+      <SectionTile title="Strengths">
+        <ul className="list-disc list-inside space-y-1">
+          {feedback.strengths?.map((point, i) => (
+            <li key={i}>{point}</li>
+          ))}
+        </ul>
+      </SectionTile>
+      <SectionTile title="Areas for Improvement">
+        <ul className="list-disc list-inside space-y-1">
+          {feedback.areasOfImprovement?.map((point, i) => (
+            <li key={i}>{point}</li>
+          ))}
+        </ul>
+      </SectionTile>
+      <SectionTile title="Practice Tips">
+        <ul className="list-disc list-inside space-y-1">
+          {feedback.practiceTips?.map((point, i) => (
+            <li key={i}>{point}</li>
+          ))}
+        </ul>
+      </SectionTile>
     </div>
   );
 };

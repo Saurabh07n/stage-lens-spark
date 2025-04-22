@@ -9,6 +9,10 @@ import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai
 
 const GEMINI_FEEDBACK_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
+type FileUploadProps = {
+  onUpload: (fileOrUrl: File | string, status: string) => void;
+};
+
 function buildGeminiPrompt(ytUrl: string) {
   return {
     contents: [
@@ -268,22 +272,45 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
         file,
         config: { mimeType: file.type }
       });
-      const basePrompt = `Act as a top-tier public speaking and video presentation coach. Analyze the following video and respond ONLY with valid JSON, no extra commentary. Strictly match this format:
+
+      let useVideoUnderstandingPrompt = false;
+      if (file) {
+        const durationInSec = await new Promise<number>(resolve => {
+          const video = document.createElement('video');
+          video.preload = 'metadata';
+          video.onloadedmetadata = () => {
+            window.URL.revokeObjectURL(video.src);
+            resolve(video.duration);
+          };
+          video.src = URL.createObjectURL(file);
+        });
+        if (durationInSec >= 60) useVideoUnderstandingPrompt = true;
+      }
+
+      const basePrompt = useVideoUnderstandingPrompt
+        ? `Act as a top-tier public speaking and video presentation coach. Analyze the following video and respond ONLY with valid JSON, no extra commentary. Strictly match this format:
 {
   "overallImpressions": "Concise summary of the speaker's style, tone, and confidence (1-2 sentences).",
   "strengths": ["Bullet points on strengths (clarity, energy, body language, etc.)"],
   "areasOfImprovement": ["Bullet points for improvement (filler words, engagement, etc.)"],
   "practiceTips": ["Actionable tips (practice routines, habits, confidence, engagement, etc.)"]
 }
-The feedback should help the user present better, gain more engagement, become a more effective speaker. Make sure to give only parsable JSON structure.`;
+The feedback should help the user present better, gain more engagement, become a more effective speaker. Make sure to give only parsable JSON structure.`
+        : "Summarize this video. Then create a quiz with an answer key based on the information in this video.";
+
       const response = await ai.models.generateContent({
         model: "gemini-2.0-flash",
         contents: createUserContent([
           createPartFromUri(myfile.uri, myfile.mimeType),
-          basePrompt
+          basePrompt,
         ]),
       });
-      const result = response.response?.candidates?.[0]?.content?.parts?.[0]?.text || response.response?.candidates?.[0]?.content?.parts?.[0];
+
+      const result =
+        (response as any)?.text ||
+        (response as any)?.candidates?.[0]?.content?.parts?.[0]?.text ||
+        (response as any)?.candidates?.[0]?.content?.parts?.[0];
+
       if (result) return parseGeminiResponse(result);
       return { error: "Could not extract feedback from Gemini" };
     } catch (error) {
