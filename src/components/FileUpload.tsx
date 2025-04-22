@@ -5,10 +5,7 @@ import { GEMINI_API_KEY, YT_API_KEY } from '../config/apiKeys';
 import { saveFeedbackToStorage } from '../utils/feedbackStore';
 import { useNavigate } from 'react-router-dom';
 import UserForm, { UserFormData } from './UserForm';
-
-interface FileUploadProps {
-  onUpload: (file: File | string, feedback?: any) => void;
-}
+import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai";
 
 const GEMINI_FEEDBACK_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
@@ -225,16 +222,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
         .trim();
   
       const parsed = JSON.parse(cleanText);
-  
       const requiredFields = ['overallImpressions', 'strengths', 'areasOfImprovement', 'practiceTips'];
       const isValid = requiredFields.every(field => parsed[field]);
-  
       if (!isValid) {
-        return {
-          error: "Incomplete feedback structure received"
-        };
+        return { error: "Incomplete feedback structure received" };
       }
-  
       return parsed;
     } catch (err) {
       console.error('Feedback parsing error:', err);
@@ -269,6 +261,36 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
     setShowUserForm(true);
   };
 
+  const analyzeFileWithGemini = async (file: File): Promise<any> => {
+    try {
+      const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+      const myfile = await ai.files.upload({
+        file,
+        config: { mimeType: file.type }
+      });
+      const basePrompt = `Act as a top-tier public speaking and video presentation coach. Analyze the following video and respond ONLY with valid JSON, no extra commentary. Strictly match this format:
+{
+  "overallImpressions": "Concise summary of the speaker's style, tone, and confidence (1-2 sentences).",
+  "strengths": ["Bullet points on strengths (clarity, energy, body language, etc.)"],
+  "areasOfImprovement": ["Bullet points for improvement (filler words, engagement, etc.)"],
+  "practiceTips": ["Actionable tips (practice routines, habits, confidence, engagement, etc.)"]
+}
+The feedback should help the user present better, gain more engagement, become a more effective speaker. Make sure to give only parsable JSON structure.`;
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: createUserContent([
+          createPartFromUri(myfile.uri, myfile.mimeType),
+          basePrompt
+        ]),
+      });
+      const result = response.response?.candidates?.[0]?.content?.parts?.[0]?.text || response.response?.candidates?.[0]?.content?.parts?.[0];
+      if (result) return parseGeminiResponse(result);
+      return { error: "Could not extract feedback from Gemini" };
+    } catch (error) {
+      return { error: "Failed to analyze your video, try again." };
+    }
+  };
+
   const handleAnalyze = async () => {
     if (youtubeLink) { await handleYoutubeAnalysisFlow(); return; }
     if (selectedFile) { await handleFileAnalysisFlow(); return; }
@@ -278,6 +300,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
 
   const handleUserFormSubmit = async (userData: UserFormData) => {
     setShowUserForm(false);
+    fetch('/api/user-analysis', {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user: userData,
+        videoType: pendingAnalyze === "file" ? "upload" : "youtube",
+        videoInfo: pendingAnalyze === "file" ? selectedFile?.name : youtubeLink
+      })
+    }).catch(() => {});
     if (pendingAnalyze === "yt") {
       try {
         onUpload(youtubeLink, "loading");
@@ -291,10 +322,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
         );
         const data = await res.json();
         let feedback = null;
-        if (data &&
-            data.candidates &&
-            data.candidates[0]?.content?.parts?.[0]?.text) {
-              feedback = parseGeminiResponse(data.candidates[0].content.parts[0].text);
+        if (data && data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+          feedback = parseGeminiResponse(data.candidates[0].content.parts[0].text);
         } else {
           feedback = { error: "We couldn't analyze your video right now. Please try again in a moment." };
         }
@@ -305,7 +334,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
         setShowWarning(true);
       }
     } else if (pendingAnalyze === "file") {
-      onUpload(selectedFile!);
+      onUpload(selectedFile!, "loading");
+      const feedback = await analyzeFileWithGemini(selectedFile!);
+      saveFeedbackToStorage(feedback);
+      navigate('/feedback');
     }
     setPendingAnalyze(null);
     setPendingData(null);

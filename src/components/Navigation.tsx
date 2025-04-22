@@ -16,9 +16,10 @@ const Navigation = () => {
     }
   };
 
+  // The correct YouTube channel
   const socialLinks = [
     { icon: Globe, href: 'https://smallgrp.com' },
-    { icon: Youtube, href: 'https://smallgrp.com' },
+    { icon: Youtube, href: 'https://www.youtube.com/@smallgrp' },
     { icon: Instagram, href: 'https://smallgrp.com' },
   ];
 

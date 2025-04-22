@@ -7,12 +7,12 @@ interface UserFormProps {
   onClose: () => void;
   onSubmit: (userData: UserFormData) => void;
 }
-
 export interface UserFormData {
   fullName: string;
   email: string;
   purpose: string;
   description: string;
+  customTask?: string;
 }
 
 const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
@@ -22,6 +22,7 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
     email: '',
     purpose: '',
     description: '',
+    customTask: '',
   });
 
   const purposeOptions = [
@@ -52,7 +53,7 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
   };
 
   const handleNextStep = () => {
-    if (step < 3) {
+    if (step < (formData.purpose === "Other" && step === 2 ? 4 : 3)) {
       setStep(step + 1);
     } else {
       onSubmit(formData);
@@ -76,7 +77,12 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
       case 2:
         return formData.purpose.trim().length > 0;
       case 3:
+        if (formData.purpose === "Other") {
+          return formData.customTask?.trim().length > 0;
+        }
         return formData.description.trim().length > 0;
+      case 4:
+        return formData.customTask?.trim().length > 0; // "Other" extra step
       default:
         return false;
     }
@@ -91,19 +97,17 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
             <X className="h-6 w-6" />
           </button>
         </div>
-
         <div className="mb-6">
           <div className="flex justify-between mb-2">
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2, 3, ...(formData.purpose === "Other" ? [4] : [])].map((i) => (
               <div 
                 key={i} 
                 className={`h-2 flex-1 mx-1 rounded-full ${i <= step ? 'bg-stage-purple' : 'bg-gray-200'}`}
               />
             ))}
           </div>
-          <div className="text-right text-sm text-gray-500">Step {step + 1} of 4</div>
+          <div className="text-right text-sm text-gray-500">Step {step + 1} of {formData.purpose === "Other" ? "5" : "4"}</div>
         </div>
-
         <div className="min-h-[250px]">
           {step === 0 && (
             <div className="space-y-4 animate-fade-in">
@@ -119,7 +123,6 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
               />
             </div>
           )}
-
           {step === 1 && (
             <div className="space-y-4 animate-fade-in">
               <h3 className="text-xl font-medium text-gray-700">What's your email?</h3>
@@ -134,7 +137,6 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
               />
             </div>
           )}
-
           {step === 2 && (
             <div className="space-y-4 animate-fade-in">
               <h3 className="text-xl font-medium text-gray-700">What's your goal?</h3>
@@ -152,8 +154,21 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
               </select>
             </div>
           )}
-
-          {step === 3 && (
+          {step === 3 && formData.purpose === "Other" && (
+            <div className="space-y-4 animate-fade-in">
+              <h3 className="text-xl font-medium text-gray-700">What task should we do for you?</h3>
+              <p className="text-gray-500">Please describe your custom task.</p>
+              <input
+                type="text"
+                name="customTask"
+                value={formData.customTask || ""}
+                onChange={handleInputChange}
+                placeholder="e.g. Suggest unique ways to boost engagement"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stage-purple focus:border-transparent outline-none"
+              />
+            </div>
+          )}
+          {(step === 3 && formData.purpose !== "Other") && (
             <div className="space-y-4 animate-fade-in">
               <h3 className="text-xl font-medium text-gray-700">How would you describe yourself?</h3>
               <p className="text-gray-500">Help us tailor our feedback to you</p>
@@ -171,7 +186,6 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
             </div>
           )}
         </div>
-
         <div className="flex justify-between mt-12">
           {step > 0 ? (
             <button
@@ -188,7 +202,7 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
             disabled={!isCurrentStepValid()}
             className={`btn-primary ${!isCurrentStepValid() ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {step === 3 ? 'Start Analysis' : 'Next'}
+            {step === (formData.purpose === "Other" ? 3 : 3) ? 'Start Analysis' : 'Next'}
           </button>
         </div>
       </div>
