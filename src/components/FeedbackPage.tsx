@@ -1,10 +1,10 @@
 
 import React from 'react';
 import { FileText, Download } from 'lucide-react';
+import { getFeedbackFromStorage } from "../utils/feedbackStore";
 
 const FeedbackPage: React.FC = () => {
-  // Dummy data as specified in the requirements
-  const feedbackData = {
+  const feedbackData = getFeedbackFromStorage() || {
     overallImpressions: "You present confidently and maintain good eye contact with the camera. Your tone is engaging and consistent.",
     strengths: ["Clear articulation", "Friendly tone", "Strong use of hand gestures"],
     areasOfImprovement: ["Try to reduce filler words like 'um' and 'you know'", "Maintain more variation in pitch to emphasize key points", "Consider slowing down during complex explanations"],
@@ -54,7 +54,9 @@ const FeedbackPage: React.FC = () => {
         <div className="feedback-card">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Suggested Practice Tips</h2>
           <ul className="list-disc pl-5 space-y-2">
-            {feedbackData.practicesTips.map((tip, index) => (
+            {feedbackData.practicesTips ? feedbackData.practicesTips.map((tip, index) => (
+              <li key={index} className="text-gray-700">{tip}</li>
+            )) : feedbackData.practiceTips?.map((tip, index) => (
               <li key={index} className="text-gray-700">{tip}</li>
             ))}
           </ul>

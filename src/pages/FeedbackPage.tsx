@@ -2,6 +2,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { getFeedbackFromStorage } from "../utils/feedbackStore";
 
 interface FeedbackData {
   overallImpressions: string;
@@ -11,19 +12,11 @@ interface FeedbackData {
   error?: string;
 }
 
-function getFeedback(): FeedbackData | null {
-  try {
-    const local = localStorage.getItem("stage_feedback");
-    if (!local) return null;
-    return JSON.parse(local);
-  } catch {
-    return null;
-  }
-}
-
 const FeedbackPage: React.FC = () => {
-  const feedback = getFeedback();
+  const feedback = getFeedbackFromStorage();
   const navigate = useNavigate();
+
+  console.log("Feedback data from storage:", feedback); // Add debugging
 
   if (!feedback || feedback.error) {
     return (
