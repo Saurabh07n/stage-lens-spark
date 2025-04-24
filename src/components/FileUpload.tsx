@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Upload, Youtube, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -219,6 +220,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
 
   const parseGeminiResponse = (responseText: string): any => {
     try {
+      // Clean the response text to handle code block formatting
       const cleanText = responseText
         .trim()
         .replace(/^```(?:json)?/, '')
@@ -229,6 +231,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
       const requiredFields = ['overallImpressions', 'strengths', 'areasOfImprovement', 'practiceTips'];
       const isValid = requiredFields.every(field => parsed[field]);
       if (!isValid) {
+        console.error("Invalid feedback structure:", parsed);
         return { error: "Incomplete feedback structure received" };
       }
       return parsed;
@@ -336,27 +339,37 @@ The feedback should help the user present better, gain more engagement, become a
         videoInfo: pendingAnalyze === "file" ? selectedFile?.name : youtubeLink
       })
     }).catch(() => {});
+    
     if (pendingAnalyze === "yt") {
       try {
         onUpload(youtubeLink, "loading");
         const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+          `${GEMINI_FEEDBACK_URL}?key=${GEMINI_API_KEY}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(buildGeminiPrompt(youtubeLink))
           }
         );
+        
         const data = await res.json();
+        console.log("Gemini API response:", data);
+        
         let feedback = null;
         if (data && data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-          feedback = parseGeminiResponse(data.candidates[0].content.parts[0].text);
+          const responseText = data.candidates[0].content.parts[0].text;
+          console.log("Raw response text:", responseText);
+          feedback = parseGeminiResponse(responseText);
+          console.log("Parsed feedback:", feedback);
         } else {
+          console.error("Unexpected API response structure:", data);
           feedback = { error: "We couldn't analyze your video right now. Please try again in a moment." };
         }
+        
         saveFeedbackToStorage(feedback);
         navigate('/feedback');
       } catch (e) {
+        console.error("YouTube analysis error:", e);
         setWarningMsg("Unable to analyze your video. Please check your connection and try again.");
         setShowWarning(true);
       }
