@@ -24,12 +24,12 @@ function buildGeminiPrompt(ytUrl: string) {
 `Act as a top-tier public speaking and video presentation coach. Analyze the following YouTube video and respond ONLY with a valid JSON, no extra commentary, strictly matching this format:
 {
   "overallImpressions": "Concise summary of the speaker's style, tone, confidence (1-2 sentences).",
+  "keyPoints": ["Main topics, points, or concepts discussed in the video"],
   "strengths": ["Bullet points on strong aspects (clarity, energy, body language, etc.)"],
   "areasOfImprovement": ["Bullet points for what can be improved (filler words, vocal variety, engagement, etc.)"],
   "practiceTips": ["Specific actionable tips (practice routines, exercises, presentation habits, confidence building, engagement techniques, etc.)"]
 }
-The feedback should help the user present better, gain more engagement, and become a more effective speaker.
-
+Focus on both presentation skills and the key discussion points to help viewers understand the content and delivery style.
 Make sure the JSON is well-structured and can be parsed directly.
 `}
 ,

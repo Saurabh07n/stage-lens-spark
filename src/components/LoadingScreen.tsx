@@ -1,14 +1,37 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mic } from 'lucide-react';
 
 const LoadingScreen: React.FC = () => {
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+
   const loadingMessages = [
-    "Tuning into your voice...",
-    "Breaking down your body language...",
     "Analyzing your presentation style...",
-    "Crafting personalized feedback..."
+    "Detecting speech patterns and clarity...",
+    "Evaluating body language and gestures...",
+    "Identifying key topics discussed...",
+    "Measuring audience engagement potential...",
+    "Processing voice modulation patterns...",
+    "Examining presentation structure...",
+    "Analyzing speaking pace and rhythm...",
+    "Checking communication effectiveness...",
+    "Assessing presentation confidence...",
+    "Reviewing content organization...",
+    "Identifying storytelling elements...",
+    "Analyzing presentation flow...",
+    "Evaluating visual engagement...",
+    "Detecting key discussion points..."
   ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentMessageIndex((prev) => 
+        prev === loadingMessages.length - 1 ? 0 : prev + 1
+      );
+    }, 3000); // Change message every 3 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center p-4">
@@ -19,16 +42,13 @@ const LoadingScreen: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-2 text-center mb-8">
-        {loadingMessages.map((message, index) => (
-          <p 
-            key={index}
-            className="text-gray-600 animate-fade-in"
-            style={{ animationDelay: `${index * 0.5}s` }}
-          >
-            {message}
-          </p>
-        ))}
+      <div className="text-center mb-8">
+        <p 
+          key={currentMessageIndex}
+          className="text-gray-600 animate-fade-in min-h-[24px]"
+        >
+          {loadingMessages[currentMessageIndex]}
+        </p>
       </div>
       
       <div className="flex space-x-2 mb-8">

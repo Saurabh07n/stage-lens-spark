@@ -9,6 +9,7 @@ interface FeedbackData {
   strengths: string[];
   areasOfImprovement: string[];
   practiceTips: string[];
+  keyPoints?: string[];
   error?: string;
 }
 
@@ -16,7 +17,7 @@ const FeedbackPage: React.FC = () => {
   const feedback = getFeedbackFromStorage();
   const navigate = useNavigate();
 
-  console.log("Feedback data from storage:", feedback); // Add debugging
+  console.log("Feedback data from storage:", feedback);
 
   if (!feedback || feedback.error) {
     return (
@@ -56,9 +57,21 @@ const FeedbackPage: React.FC = () => {
         <span className="font-bold text-xl text-gray-900">Your Video Feedback</span>
         <div />
       </div>
+      
       <SectionTile title="Overall Impressions">
         {feedback.overallImpressions}
       </SectionTile>
+
+      {feedback.keyPoints && feedback.keyPoints.length > 0 && (
+        <SectionTile title="Key Points Discussed">
+          <ul className="list-disc list-inside space-y-1">
+            {feedback.keyPoints.map((point, i) => (
+              <li key={i}>{point}</li>
+            ))}
+          </ul>
+        </SectionTile>
+      )}
+      
       <SectionTile title="Strengths">
         <ul className="list-disc list-inside space-y-1">
           {feedback.strengths?.map((point, i) => (
@@ -66,6 +79,7 @@ const FeedbackPage: React.FC = () => {
           ))}
         </ul>
       </SectionTile>
+      
       <SectionTile title="Areas for Improvement">
         <ul className="list-disc list-inside space-y-1">
           {feedback.areasOfImprovement?.map((point, i) => (
@@ -73,6 +87,7 @@ const FeedbackPage: React.FC = () => {
           ))}
         </ul>
       </SectionTile>
+      
       <SectionTile title="Practice Tips">
         <ul className="list-disc list-inside space-y-1">
           {feedback.practiceTips?.map((point, i) => (
