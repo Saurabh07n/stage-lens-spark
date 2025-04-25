@@ -339,6 +339,16 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
 
   const handleUserFormSubmit = async (userData: UserFormData) => {
     setShowUserForm(false);
+
+    // fetch('https://n8n-webhook-url.smg', {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({
+    //     user: userData,
+    //     videoType: pendingAnalyze === "file" ? "upload" : "youtube",
+    //     videoInfo: pendingAnalyze === "file" ? selectedFile?.name : youtubeLink
+    //   })
+    // }).catch(() => {});
     
     if (pendingAnalyze === "yt") {
       try {
