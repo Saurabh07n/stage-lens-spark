@@ -10,7 +10,7 @@ import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai
 
 const GEMINI_FEEDBACK_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
-const basePrompt = `Act as a top-tier public speaking and video presentation coach. Analyze the following YouTube video and respond ONLY with a valid JSON, no extra commentary, strictly matching this format:
+const basePrompt1 = `Act as a top-tier public speaking and video presentation coach. Analyze the following YouTube video and respond ONLY with a valid JSON, no extra commentary, strictly matching this format:
 {
   "overallImpressions": "Concise summary of the speaker's style, tone, confidence (1-2 sentences).",
   "keyPoints": ["Main topics, points, or concepts discussed in the video"],
@@ -20,6 +20,26 @@ const basePrompt = `Act as a top-tier public speaking and video presentation coa
 }
 Focus on both presentation skills and the key discussion points to help viewers understand the content and delivery style.
 Make sure the JSON is well-structured and can be parsed directly.`;
+
+const basePrompt = `You're a warm, insightful top-tier, public speaking and video presentation coach. Watch the video carefully and share thoughtful, encouraging feedback to help the speaker grow. Analyze the following video and respond ONLY with a valid JSON, no extra commentary, strictly matching this format:
+{
+  "version": "1.0",
+  "overallImpressions": "Concise summary of the speaker's style, tone, and confidence (1-2 sentences).",
+  "keyPoints": ["Up to 5 main topics, points, or concepts discussed in the video"],
+  "strengths": ["3-5 bullet points highlighting strong aspects like clarity, energy, body language, structure, etc."],
+  "areasOfImprovement": ["3-5 bullet points suggesting improvements like vocal variety, filler words, audience engagement, etc."],
+  "practiceTips": ["Specific actionable tips (exercises, habits, routines) to enhance delivery and content quality."],
+  "personalityMetrics": {
+    "confidence": 0-10 float,
+    "clarity": 0-10 float,
+    "engagement": 0-10 float,
+    "vocalVariety": 0-10 float,
+    "bodyLanguage": 0-10 float,
+    "overallDelivery": 0-10 float
+  }
+}
+Focus equally on presentation quality and the value of the content being communicated. Ensure the JSON is well-structured and directly parsable. Use floating point scores rounded to one decimal place for metrics.`;
+
 
 type FileUploadProps = {
   onUpload: (fileOrUrl: File | string, status: string) => void;
@@ -319,15 +339,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
 
   const handleUserFormSubmit = async (userData: UserFormData) => {
     setShowUserForm(false);
-    // fetch('/api/user-analysis', {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({
-    //     user: userData,
-    //     videoType: pendingAnalyze === "file" ? "upload" : "youtube",
-    //     videoInfo: pendingAnalyze === "file" ? selectedFile?.name : youtubeLink
-    //   })
-    // }).catch(() => {});
     
     if (pendingAnalyze === "yt") {
       try {
