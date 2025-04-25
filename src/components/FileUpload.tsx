@@ -10,6 +10,17 @@ import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai
 
 const GEMINI_FEEDBACK_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
+const basePrompt = `Act as a top-tier public speaking and video presentation coach. Analyze the following YouTube video and respond ONLY with a valid JSON, no extra commentary, strictly matching this format:
+{
+  "overallImpressions": "Concise summary of the speaker's style, tone, confidence (1-2 sentences).",
+  "keyPoints": ["Main topics, points, or concepts discussed in the video"],
+  "strengths": ["Bullet points on strong aspects (clarity, energy, body language, etc.)"],
+  "areasOfImprovement": ["Bullet points for what can be improved (filler words, vocal variety, engagement, etc.)"],
+  "practiceTips": ["Specific actionable tips (practice routines, exercises, presentation habits, confidence building, engagement techniques, etc.)"]
+}
+Focus on both presentation skills and the key discussion points to help viewers understand the content and delivery style.
+Make sure the JSON is well-structured and can be parsed directly.`;
+
 type FileUploadProps = {
   onUpload: (fileOrUrl: File | string, status: string) => void;
 };
@@ -20,18 +31,7 @@ function buildGeminiPrompt(ytUrl: string) {
       {
         parts: [
           {
-            text:
-`Act as a top-tier public speaking and video presentation coach. Analyze the following YouTube video and respond ONLY with a valid JSON, no extra commentary, strictly matching this format:
-{
-  "overallImpressions": "Concise summary of the speaker's style, tone, confidence (1-2 sentences).",
-  "keyPoints": ["Main topics, points, or concepts discussed in the video"],
-  "strengths": ["Bullet points on strong aspects (clarity, energy, body language, etc.)"],
-  "areasOfImprovement": ["Bullet points for what can be improved (filler words, vocal variety, engagement, etc.)"],
-  "practiceTips": ["Specific actionable tips (practice routines, exercises, presentation habits, confidence building, engagement techniques, etc.)"]
-}
-Focus on both presentation skills and the key discussion points to help viewers understand the content and delivery style.
-Make sure the JSON is well-structured and can be parsed directly.
-`}
+            text: basePrompt}
 ,
           {
             file_data: {
@@ -276,7 +276,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
         config: { mimeType: file.type }
       });
 
-      let useVideoUnderstandingPrompt = false;
       if (file) {
         const durationInSec = await new Promise<number>(resolve => {
           const video = document.createElement('video');
@@ -287,19 +286,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUpload }) => {
           };
           video.src = URL.createObjectURL(file);
         });
-        if (durationInSec >= 60) useVideoUnderstandingPrompt = true;
       }
 
-      const basePrompt = useVideoUnderstandingPrompt
-        ? `Act as a top-tier public speaking and video presentation coach. Analyze the following video and respond ONLY with valid JSON, no extra commentary. Strictly match this format:
-{
-  "overallImpressions": "Concise summary of the speaker's style, tone, and confidence (1-2 sentences).",
-  "strengths": ["Bullet points on strengths (clarity, energy, body language, etc.)"],
-  "areasOfImprovement": ["Bullet points for improvement (filler words, engagement, etc.)"],
-  "practiceTips": ["Actionable tips (practice routines, habits, confidence, engagement, etc.)"]
-}
-The feedback should help the user present better, gain more engagement, become a more effective speaker. Make sure to give only parsable JSON structure.`
-        : "Summarize this video. Then create a quiz with an answer key based on the information in this video.";
+      await new Promise(resolve => setTimeout(resolve, 5000));
 
       const response = await ai.models.generateContent({
         model: "gemini-2.0-flash",
@@ -330,15 +319,15 @@ The feedback should help the user present better, gain more engagement, become a
 
   const handleUserFormSubmit = async (userData: UserFormData) => {
     setShowUserForm(false);
-    fetch('/api/user-analysis', {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user: userData,
-        videoType: pendingAnalyze === "file" ? "upload" : "youtube",
-        videoInfo: pendingAnalyze === "file" ? selectedFile?.name : youtubeLink
-      })
-    }).catch(() => {});
+    // fetch('/api/user-analysis', {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({
+    //     user: userData,
+    //     videoType: pendingAnalyze === "file" ? "upload" : "youtube",
+    //     videoInfo: pendingAnalyze === "file" ? selectedFile?.name : youtubeLink
+    //   })
+    // }).catch(() => {});
     
     if (pendingAnalyze === "yt") {
       try {
