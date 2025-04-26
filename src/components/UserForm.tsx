@@ -36,7 +36,7 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, onSubmit }) => {
 
   const descriptionOptions = [
     'Student',
-    'Creator',
+    'Content Creator',
     'Speaker',
     'Professional',
     'Entrepreneur',
